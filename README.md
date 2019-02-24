@@ -15,9 +15,7 @@ The driver does not currently support the following:
 
 	Median stacking
 
-	~~Ubuntu Mate (Astroberry Server, StellarMate)~~
-
-
+	
 To do:
 
 Add INDI config tab -
