@@ -1,5 +1,5 @@
 
-# Installing and settting up raspiraw from source
+# Installing and setting up raspiraw from source
 
 cd
 
