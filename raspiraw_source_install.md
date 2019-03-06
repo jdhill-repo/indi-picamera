@@ -36,5 +36,3 @@ sudo nano /etc/rc.local
 
 
 sudo reboot
-
-
