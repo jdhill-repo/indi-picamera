@@ -520,16 +520,6 @@ bool PiCameraCCD::StartExposure(float duration)
             SetCCDCapability(GetCCDCapability() & ~CCD_HAS_BAYER);
         }
 
-        // DEBUG
-        LOGF_INFO("fullframe = %i\n", fullframe);
-        LOGF_INFO("binned =  %i\n", binned);
-        LOGF_INFO("bayer = %i\n", bayer);
-        LOGF_INFO("GetCCDCapability = %i\n", GetCCDCapability() & CCD_HAS_BAYER);
-
-
-
-
-
          // ---------------------------------------------------------------------------
 
         //Start Frames
