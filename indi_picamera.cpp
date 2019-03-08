@@ -86,7 +86,7 @@ FILE *imageFileStreamPipe;
 
 const char* cmd = "cat /home/jdhill/Development/rawtest/image_s25000_a16_d2.jpg";
 
-int fullframe = 0;
+int fullframe = 1;
 int binned = 0;
 
 //Testing
