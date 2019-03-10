@@ -267,7 +267,7 @@ bool PiCameraCCD::initProperties()
     INDI::CCD::initProperties();
 
     // Most cameras have this by default, so let's set it as default.
-    IUSaveText(&BayerT[2], "GRBG");
+    IUSaveText(&BayerT[2], "BGGR");
 
     uint32_t cap = CCD_CAN_ABORT | CCD_CAN_BIN | CCD_CAN_SUBFRAME | CCD_HAS_BAYER /*| CCD_HAS_GUIDE_HEAD | CCD_HAS_STREAMING | CCD_HAS_COOLER | CCD_HAS_SHUTTER | CCD_HAS_ST4_PORT*/;
     SetCCDCapability(cap);
