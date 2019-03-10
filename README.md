@@ -1,7 +1,7 @@
 # indi-picamera
 Raspberry Pi Camera Driver For INDI
 
-The indi-picamera driver is an experimental INDI driver for the Raspberry Pi Camera. The current version only supports the V2 camera. The indi-picamera driver makes use of raspiraw, an example app that receives data directly from CSI sensors on the Raspberry Pi. It supports full sensor (raw bayered ), subframed, and binned images. The Bayer pattern of "GRBG" is written to the FITS header if a fullframe, unbinned image is captured. The driver uses internal automatic software sum stacking of roughly 1 second integrations to achieve very long exposures.
+The indi-picamera driver is an experimental INDI driver for the Raspberry Pi Camera. The current version only supports the V2 camera. The indi-picamera driver makes use of raspiraw, an example app that receives data directly from CSI sensors on the Raspberry Pi. It supports full sensor (raw bayered ), subframed, and binned images. The Bayer pattern of "BGGR" is written to the FITS header if a fullframe, unbinned image is captured. The driver uses internal automatic software sum stacking of roughly 1 second integrations to achieve very long exposures.
 
 The driver does not currently support the following:
 
