@@ -31,6 +31,9 @@ using namespace std;
 
 #define DEVICE struct usb_device *
 
+void WEGuiderTimerCallback(void *p);
+void NSGuiderTimerCallback(void *p);
+
 class PiCameraCCD : public INDI::CCD
 {
   public:
@@ -53,6 +56,10 @@ class PiCameraCCD : public INDI::CCD
 //    bool StartGuideExposure(float) override;
 //    bool AbortGuideExposure() override;
 
+    friend void ::WEGuiderTimerCallback(void *p);
+    friend void ::NSGuiderTimerCallback(void *p);
+
+
     static void *streamVideoHelper(void *context);
     void *streamVideo();
 
@@ -71,10 +78,19 @@ class PiCameraCCD : public INDI::CCD
     virtual bool UpdateCCDFrameType(INDI::CCDChip::CCD_FRAME fType);
 
     // Guide Port
-    virtual IPState GuideNorth(uint32_t ms);
-    virtual IPState GuideSouth(uint32_t ms);
-    virtual IPState GuideEast(uint32_t ms);
-    virtual IPState GuideWest(uint32_t ms);
+    // virtual IPState GuideNorth(uint32_t ms);
+    // virtual IPState GuideSouth(uint32_t ms);
+    // virtual IPState GuideEast(uint32_t ms);
+    // virtual IPState GuideWest(uint32_t ms);
+
+    void GuideExposureTimerHit();
+    void WEGuiderTimerHit();
+    void NSGuiderTimerHit();
+    IPState GuideWest(uint32_t ms);
+    IPState GuideEast(uint32_t ms);
+    IPState GuideNorth(uint32_t ms);
+    IPState GuideSouth(uint32_t ms);
+
 
 //    virtual bool StartStreaming() override;
 //    virtual bool StopStreaming() override;
@@ -98,6 +114,15 @@ class PiCameraCCD : public INDI::CCD
 
     float ExposureRequest;
     float TemperatureRequest;
+
+    int WEGuiderTimerID;
+    int NSGuiderTimerID;
+    char GuideStatus;
+
+    ISwitch CoolerS[2];
+    ISwitchVectorProperty CoolerSP;
+    ISwitch ShutterS[2];
+    ISwitchVectorProperty ShutterSP;
 
 //    float GuideExposureRequest { 0 };
 

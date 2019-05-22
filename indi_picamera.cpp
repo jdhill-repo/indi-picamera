@@ -89,8 +89,14 @@ const char* cmd = "cat /home/jdhill/Development/rawtest/image_s25000_a16_d2.jpg"
 int fullframe = 1;
 int binned = 0;
 
+
+// -------------------------
 //Testing
-int testing = 0;
+int testing = 1;
+
+//#include <wiringPi.h>
+// -------------------------
+
 
 //Options
 int bayer = 1;
@@ -184,6 +190,7 @@ void ISNewSwitch(const char *dev, const char *name, ISState *states, char *names
                 break;
         }
     }
+
 }
 
 void ISNewText(const char *dev, const char *name, char *texts[], char *names[], int num)
@@ -250,6 +257,12 @@ PiCameraCCD::PiCameraCCD(DEVICE device, const char *name)
     streamPredicate = 0;
     terminateThread = false;
 
+    GuideStatus = 0;
+
+    NSGuiderTimerID = 0;
+    WEGuiderTimerID = 0;
+
+
 }
 
 PiCameraCCD::~PiCameraCCD()
@@ -269,7 +282,7 @@ bool PiCameraCCD::initProperties()
     // Most cameras have this by default, so let's set it as default.
     IUSaveText(&BayerT[2], "BGGR");
 
-    uint32_t cap = CCD_CAN_ABORT | CCD_CAN_BIN | CCD_CAN_SUBFRAME | CCD_HAS_BAYER /*| CCD_HAS_GUIDE_HEAD | CCD_HAS_STREAMING | CCD_HAS_COOLER | CCD_HAS_SHUTTER | CCD_HAS_ST4_PORT*/;
+    uint32_t cap = CCD_CAN_ABORT | CCD_CAN_BIN | CCD_CAN_SUBFRAME | CCD_HAS_BAYER  | CCD_HAS_ST4_PORT/*| CCD_HAS_GUIDE_HEAD | CCD_HAS_STREAMING | CCD_HAS_COOLER | CCD_HAS_SHUTTER*/;
     SetCCDCapability(cap);
 
     addConfigurationControl();
@@ -332,6 +345,15 @@ bool PiCameraCCD::Connect()
 
     if(!testing){
         system("camera_i2c");
+
+        // ST-4 Port Setup
+        wiringPiSetup () ;
+        pinMode (27, OUTPUT) ; // RA +
+        pinMode (22, OUTPUT) ; // RA-
+        pinMode (23, OUTPUT) ; // DEC +
+        pinMode (24, OUTPUT) ; // DEC-
+
+
     }
 
 
@@ -1128,9 +1150,9 @@ void PiCameraCCD::TimerHit()
 
 
 
-IPState PiCameraCCD::GuideNorth(uint32_t ms)
-{
-    INDI_UNUSED(ms);
+//IPState PiCameraCCD::GuideNorth(uint32_t ms)
+//{
+//    INDI_UNUSED(ms);
     /**********************************************************
    *
    *
@@ -1149,12 +1171,12 @@ IPState PiCameraCCD::GuideNorth(uint32_t ms)
    *
    **********************************************************/
 
-    return IPS_OK;
-}
+//    return IPS_OK;
+//}
 
-IPState PiCameraCCD::GuideSouth(uint32_t ms)
-{
-    INDI_UNUSED(ms);
+//IPState PiCameraCCD::GuideSouth(uint32_t ms)
+//{
+//    INDI_UNUSED(ms);
     /**********************************************************
      *
      *
@@ -1173,12 +1195,12 @@ IPState PiCameraCCD::GuideSouth(uint32_t ms)
      *
      **********************************************************/
 
-    return IPS_OK;
-}
+//    return IPS_OK;
+//}
 
-IPState PiCameraCCD::GuideEast(uint32_t ms)
-{
-    INDI_UNUSED(ms);
+//IPState PiCameraCCD::GuideEast(uint32_t ms)
+//{
+//    INDI_UNUSED(ms);
     /**********************************************************
      *
      *
@@ -1197,12 +1219,12 @@ IPState PiCameraCCD::GuideEast(uint32_t ms)
      *
      **********************************************************/
 
-    return IPS_OK;
-}
+//    return IPS_OK;
+//}
 
-IPState PiCameraCCD::GuideWest(uint32_t ms)
-{
-    INDI_UNUSED(ms);
+//IPState PiCameraCCD::GuideWest(uint32_t ms)
+//{
+//    INDI_UNUSED(ms);
     /**********************************************************
      *
      *
@@ -1221,8 +1243,8 @@ IPState PiCameraCCD::GuideWest(uint32_t ms)
      *
      **********************************************************/
 
-    return IPS_OK;
-}
+//    return IPS_OK;
+//}
 
 // *****************************************************************************************
 
@@ -1303,5 +1325,179 @@ void *PiCameraCCD::streamVideo()
     return 0;
 }
 
+// ======================================================================================================
 
+
+
+void WEGuiderTimerCallback(void *p)
+{
+    ((PiCameraCCD *)p)->WEGuiderTimerHit();
+}
+
+void NSGuiderTimerCallback(void *p)
+{
+    ((PiCameraCCD *)p)->NSGuiderTimerHit();
+}
+
+IPState PiCameraCCD::GuideWest(uint32_t ms)
+{
+    if (/*!HasST4Port ||*/ ms < 1)
+    {
+        return IPS_ALERT;
+    }
+    if (WEGuiderTimerID)
+    {
+        IERmTimer(WEGuiderTimerID);
+        WEGuiderTimerID = 0;
+    }
+//    GuideStatus &= SX_CLEAR_WE;
+//    GuideStatus |= SX_GUIDE_WEST;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+    LOGF_INFO("Guide WEST %i ms", ms);
+    digitalWrite (27, HIGH) ;
+
+    if (ms < 100)
+    {
+        usleep(ms * 1000);
+//        GuideStatus &= SX_CLEAR_WE;
+//        sxSetSTAR2000(handle, GuideStatus);
+
+    LOG_INFO("Guide WEST/EAST stop.");
+    digitalWrite (27, LOW) ;
+    digitalWrite (22, LOW) ;
+
+    }
+    else
+        WEGuiderTimerID = IEAddTimer(ms, WEGuiderTimerCallback, this);
+    return IPS_OK;
+}
+
+IPState PiCameraCCD::GuideEast(uint32_t ms)
+{
+    if (/*!HasST4Port ||*/ ms < 1)
+    {
+        return IPS_ALERT;
+    }
+    if (WEGuiderTimerID)
+    {
+        IERmTimer(WEGuiderTimerID);
+        WEGuiderTimerID = 0;
+    }
+//    GuideStatus &= SX_CLEAR_WE;
+//    GuideStatus |= SX_GUIDE_EAST;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+    LOGF_INFO("Guide EAST %i ms", ms);
+    digitalWrite (22, HIGH) ;
+
+    if (ms < 100)
+    {
+        usleep(ms * 1000);
+//        GuideStatus &= SX_CLEAR_WE;
+//        sxSetSTAR2000(handle, GuideStatus);
+
+        LOG_INFO("Guide WEST/EAST stop.");
+        digitalWrite (27, LOW) ;
+        digitalWrite (22, LOW) ;
+
+    }
+    else
+        WEGuiderTimerID = IEAddTimer(ms, WEGuiderTimerCallback, this);
+    return IPS_OK;
+}
+
+void PiCameraCCD::WEGuiderTimerHit()
+{
+//    GuideStatus &= SX_CLEAR_WE;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+    LOG_INFO("Guide WEST/EAST stop.");
+    digitalWrite (27, LOW) ;
+    digitalWrite (22, LOW) ;
+
+    WEGuiderTimerID = 0;
+    GuideComplete(AXIS_RA);
+}
+
+IPState PiCameraCCD::GuideNorth(uint32_t ms)
+{
+    if (/*!HasST4Port ||*/ ms < 1)
+    {
+        return IPS_ALERT;
+    }
+    if (NSGuiderTimerID)
+    {
+        IERmTimer(NSGuiderTimerID);
+        NSGuiderTimerID = 0;
+    }
+//    GuideStatus &= SX_CLEAR_NS;
+//    GuideStatus |= SX_GUIDE_NORTH;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+    LOGF_INFO("Guide NORTH %i ms", ms);
+    digitalWrite (23, HIGH) ;
+
+    if (ms < 100)
+    {
+        usleep(ms * 1000);
+//        GuideStatus &= SX_CLEAR_NS;
+//        sxSetSTAR2000(handle, GuideStatus);
+
+        LOG_INFO("Guide NORTH/SOUTH stop.");
+        digitalWrite (23, LOW) ;
+        digitalWrite (24, LOW) ;
+
+    }
+    else
+        NSGuiderTimerID = IEAddTimer(ms, NSGuiderTimerCallback, this);
+    return IPS_OK;
+}
+
+IPState PiCameraCCD::GuideSouth(uint32_t ms)
+{
+    if (/*!HasST4Port ||*/ ms < 1)
+    {
+        return IPS_ALERT;
+    }
+    if (NSGuiderTimerID)
+    {
+        IERmTimer(NSGuiderTimerID);
+        NSGuiderTimerID = 0;
+    }
+//    GuideStatus &= SX_CLEAR_NS;
+//    GuideStatus |= SX_GUIDE_SOUTH;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+        LOGF_INFO("Guide SOUTH %i ms", ms);
+        digitalWrite (24, HIGH) ;
+
+    if (ms < 100)
+    {
+        usleep(ms * 1000);
+//        GuideStatus &= SX_CLEAR_NS;
+//        sxSetSTAR2000(handle, GuideStatus);
+
+        LOG_INFO("Guide NORTH/SOUTH stop.");
+        digitalWrite (23, LOW) ;
+        digitalWrite (24, LOW) ;
+
+    }
+    else
+        NSGuiderTimerID = IEAddTimer(ms, NSGuiderTimerCallback, this);
+    return IPS_OK;
+}
+
+void PiCameraCCD::NSGuiderTimerHit()
+{
+//    GuideStatus &= SX_CLEAR_NS;
+//    sxSetSTAR2000(handle, GuideStatus);
+
+    LOG_INFO("Guide NORTH/SOUTH stop.");
+    digitalWrite (23, LOW) ;
+    digitalWrite (24, LOW) ;
+
+    NSGuiderTimerID = 0;
+    GuideComplete(AXIS_DE);
+}
 

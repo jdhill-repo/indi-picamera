@@ -13,6 +13,7 @@ find_package(Threads REQUIRED)
 find_package(CFITSIO REQUIRED)
 find_package(INDI REQUIRED)
 find_package(ZLIB REQUIRED)
+find_library(wiringPi_LIB wiringPi)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/indi_picamera.xml.cmake ${CMAKE_CURRENT_BINARY_DIR}/indi_picamera_ccd.xml )
@@ -31,7 +32,7 @@ set(indipicamera_SRCS
 
 add_executable(indi_picamera_ccd ${indipicamera_SRCS})
 
-target_link_libraries(indi_picamera_ccd ${INDI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CFITSIO_LIBRARIES} m ${ZLIB_LIBRARY})
+target_link_libraries(indi_picamera_ccd ${INDI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CFITSIO_LIBRARIES} m ${ZLIB_LIBRARY} ${wiringPi_LIB})
 
 install(TARGETS indi_picamera_ccd RUNTIME DESTINATION bin)
 
