@@ -92,9 +92,9 @@ int binned = 0;
 
 // -------------------------
 //Testing
-int testing = 1;
+int testing = 0;
 
-//#include <wiringPi.h>
+#include <wiringPi.h>
 // -------------------------
 
 
@@ -347,7 +347,7 @@ bool PiCameraCCD::Connect()
         system("camera_i2c");
 
         // ST-4 Port Setup
-        wiringPiSetup () ;
+        wiringPiSetupGpio () ;
         pinMode (27, OUTPUT) ; // RA +
         pinMode (22, OUTPUT) ; // RA-
         pinMode (23, OUTPUT) ; // DEC +

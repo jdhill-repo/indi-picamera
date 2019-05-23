@@ -1,0 +1,7 @@
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/install/local.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/install.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/install/strip.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/edit_cache.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/indi_picamera_ccd.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/rebuild_cache.dir
+/home/pi/indi/3rdparty/indi-picamera/build/CMakeFiles/list_install_components.dir

@@ -1,0 +1,2 @@
+/usr/bin/indi_picamera_ccd
+/usr/share/indi/indi_picamera_ccd.xml
