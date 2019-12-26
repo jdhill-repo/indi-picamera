@@ -269,7 +269,7 @@ bool PiCameraCCD::initProperties()
     // Most cameras have this by default, so let's set it as default.
     IUSaveText(&BayerT[2], "BGGR");
 
-    uint32_t cap = CCD_CAN_ABORT | CCD_CAN_BIN | CCD_CAN_SUBFRAME | CCD_HAS_BAYER /*| CCD_HAS_GUIDE_HEAD | CCD_HAS_STREAMING | CCD_HAS_COOLER | CCD_HAS_SHUTTER | CCD_HAS_ST4_PORT*/;
+    uint32_t cap = CCD_CAN_ABORT | CCD_CAN_BIN | CCD_CAN_SUBFRAME | CCD_HAS_BAYER /*| CCD_HAS_GUIDE_HEAD */ | CCD_HAS_STREAMING /*| CCD_HAS_COOLER | CCD_HAS_SHUTTER | CCD_HAS_ST4_PORT*/;
     SetCCDCapability(cap);
 
     addConfigurationControl();
@@ -321,13 +321,13 @@ bool PiCameraCCD::Connect()
     /* Success! */
     LOG_INFO("Camera is online. Retrieving basic data.");
 
-/*
+
 
     streamPredicate = 0;
     terminateThread = false;
     pthread_create(&primary_thread, nullptr, &streamVideoHelper, this);
 
-*/
+
 
 
     if(!testing){
@@ -352,13 +352,13 @@ bool PiCameraCCD::Disconnect()
    *
    *
    **********************************************************/
-/*
+
     pthread_mutex_lock(&condMutex);
     streamPredicate = 1;
     terminateThread = true;
     pthread_cond_signal(&cv);
     pthread_mutex_unlock(&condMutex);
-*/
+
 
     terminateFrameStream();
 
@@ -423,10 +423,10 @@ bool PiCameraCCD::setupParams()
     SetCCDParams(x_2 - x_1, y_2 - y_1, bit_depth, x_pixel_size, y_pixel_size);
 
 
-/*
+
     Streamer->setPixelFormat(INDI_MONO, 16);
     Streamer->setSize(PrimaryCCD.getXRes(), PrimaryCCD.getYRes());
-*/
+
 
     // Now we usually do the following in the hardware
     // Set Frame to LIGHT or NORMAL
@@ -477,6 +477,7 @@ bool PiCameraCCD::StartExposure(float duration)
 {
         minDuration = 1;
 
+/*
         if (duration < minDuration)
         {
             DEBUGF(INDI::Logger::DBG_WARNING,
@@ -484,6 +485,8 @@ bool PiCameraCCD::StartExposure(float duration)
                    minDuration);
             duration = minDuration;
         }
+
+*/
 
         if (imageFrameType == INDI::CCDChip::BIAS_FRAME)
         {
@@ -524,7 +527,12 @@ bool PiCameraCCD::StartExposure(float duration)
 
         //Start Frames
         if(!FrameStreamIsRunning){
-            startFrameStream(); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+            startFrameStream(1, 1); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+
+            // Debug
+            LOGF_INFO("Starting frame stream of %d FPS with %d second exposures", 1,1);
+
+
         }
 
         FrameStreamIsRunning = true;
@@ -577,7 +585,7 @@ int PiCameraCCD::terminateFrameStream(){
 }
 
 
-int PiCameraCCD::startFrameStream(){  // Add arguments for exposure and framerate. Maybe set in indi console later.
+int PiCameraCCD::startFrameStream(double fps, double exposure){  // Add arguments for exposure and framerate. Maybe set in indi console later.
 
 
     // ---------------------------------------------------------------------------
@@ -596,9 +604,12 @@ int PiCameraCCD::startFrameStream(){  // Add arguments for exposure and framerat
         // Create command
         ostringstream cmd;
 
-        cmd << "raspiraw -md 2 -o /dev/stdout -t 9999999 -sr 1 -eus 950000 -g 230 -f 1";
+        exposure = exposure * 950000;
 
-        ///LOGF_INFO("cmd : %s\n", cmd.str().c_str());
+
+        cmd << "raspiraw -md 2 -o /dev/stdout -t 9999999 -sr 1 -eus " << exposure << " -g 230 -f " << fps;
+
+        LOGF_INFO("cmd : %s\n", cmd.str().c_str());
 
         imageFileStreamPipe = popen(cmd.str().c_str(), "r");
 
@@ -752,6 +763,12 @@ bool PiCameraCCD::UpdateCCDFrame(int x, int y, int w, int h)
    *
    **********************************************************/
 
+        bin_width  = bin_width - (bin_width % 2);
+        bin_height = bin_height - (bin_height % 2);
+
+        Streamer->setSize(bin_width, bin_height);
+
+
     if ((x_1 == 0) && (y_1 == 0) && (w == 3280) && (h == 2464))
     {
         // Is fullframe image
@@ -805,6 +822,15 @@ bool PiCameraCCD::UpdateCCDBin(int binx, int biny)
     }
 
 
+    long bin_width  = PrimaryCCD.getSubW() / binx;
+    long bin_height = PrimaryCCD.getSubH() / biny;
+
+    bin_width  = bin_width - (bin_width % 2);
+    bin_height = bin_height - (bin_height % 2);
+
+    Streamer->setSize(bin_width, bin_height);
+
+
     PrimaryCCD.setBin(binx, biny);
 
     return UpdateCCDFrame(PrimaryCCD.getSubX(), PrimaryCCD.getSubY(), PrimaryCCD.getSubW(), PrimaryCCD.getSubH());
@@ -833,7 +859,7 @@ int PiCameraCCD::getFrame(unsigned short *image){
     size_t result = 0;
     long int totalBytesread = 0;
     int loopcount = 0;
-    int recheck = 0;
+    int hasFrame = 0;
 
 
         ///LOG_INFO("getFrame called");
@@ -861,11 +887,11 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
              if(file_length == RAWBLOCKSIZE){ // Retrieved all of image
 
-                recheck = 0;
+                hasFrame = 1;
 
                 ///LOGF_INFO("loopcount = %i", loopcount);
 
-                ///LOGF_INFO("... Frame received. -> %li bytes. ", file_length);
+                LOGF_INFO("... Frame received. -> %li bytes. ", file_length);
 
                 unsigned long offset;  // offset into file to start reading pixel data
                 unsigned char split;        // single byte with 4 pairs of low-order bits
@@ -901,55 +927,47 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
                 ///LOG_INFO("Raw Data Unpacked");
 
-                // Increment frame count
-                framecount ++;
-
-                LOGF_INFO("Frame %i of %i", framecount, numOfFrames);
-
                 //Reset in buffer
                 totalBytesread = 0;
 
 
-                // ************** Perform Image Operations *****************
-                // such as summing, averaging, noise clip, etc
-
-                // Summming operation
-                for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
-                        buffer[pixel] += image[pixel] >> 6; // remove shift created during image unpacking
-                }
-                // *********************************************************
-/*
-                // ************** Perform Image Operations *****************
-                // For video streaming
-
-                // Summming operation
-                for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
-
-                        buffer[pixel] = image[pixel]; // To Do: Change to memcopy
-
-                }
-                // *********************************************************
-*/
-
             }
-
-
-            // ============================================================
 
 
         }while(totalBytesread > 0);
 
-    return 0;
+    return hasFrame;
 
 }
 
 
 int PiCameraCCD::addtosum(unsigned short *image, unsigned short *buffer){
 
-    // Summming operation
-    for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
-            buffer[pixel] += image[pixel];
+    if(!streamPredicate){
+
+        // Summming operation
+        for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
+                buffer[pixel] += image[pixel] >> 6; // remove shift created during image unpacking
+        }
+
+        // Increment frame count
+        framecount ++;
+
+        LOGF_INFO("Frame %i of %i", framecount, numOfFrames);
+
+
+    }else{
+
+        // For video streaming
+        for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
+
+                buffer[pixel] = image[pixel]/* << 4*/;
+
+        }
+
     }
+
+
 
   return 0;
 
@@ -1017,7 +1035,9 @@ void PiCameraCCD::TimerHit()
         // Grab frame
         if(framecount < numOfFrames){
 
-            getFrame(image);
+           if(getFrame(image)){
+               addtosum(image, buffer);
+           }
 
         }
 
@@ -1038,7 +1058,9 @@ void PiCameraCCD::TimerHit()
             if(framecount < numOfFrames)
             {
 
-                  getFrame(image);
+                if(getFrame(image)){
+                    addtosum(image, buffer);
+                }
 
             }else{
 
@@ -1073,7 +1095,7 @@ void PiCameraCCD::TimerHit()
 
     }else{
 
-        if(FrameStreamIsRunning){ // '
+        if(FrameStreamIsRunning & !streamPredicate){ // '
 
         // ******************************************************************************************
         // Read and dispose of unused frame
@@ -1093,7 +1115,7 @@ void PiCameraCCD::TimerHit()
 
             if(file_length == RAWBLOCKSIZE){ // Retrieved all of frame
 
-                ///LOGF_INFO("... Frame received and deleted. -> %li bytes. ", file_length);
+                LOGF_INFO("... Frame received and deleted. -> %li bytes. ", file_length);
 
                 //Reset in buffer
                 totalBytesread = 0;
@@ -1228,15 +1250,30 @@ IPState PiCameraCCD::GuideWest(uint32_t ms)
 
 bool PiCameraCCD::StartStreaming()
 {
-
-    startFrameStream();
-    FrameStreamIsRunning = true;
-
     ExposureRequest = 1.0 / Streamer->getTargetFPS();
     pthread_mutex_lock(&condMutex);
     streamPredicate = 1;
     pthread_mutex_unlock(&condMutex);
     pthread_cond_signal(&cv);
+
+
+    // Debug
+    LOGF_INFO("Target FPS: %d ", Streamer->getTargetFPS());
+    LOGF_INFO("Target Exposure: %d ", Streamer->getTargetExposure());
+
+
+    // ---------------------------------------------------------------------------
+
+   //Start Frames
+   if(!FrameStreamIsRunning){
+       startFrameStream(Streamer->getTargetFPS(), Streamer->getTargetExposure()); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+   }
+
+   FrameStreamIsRunning = true;
+
+   // ---------------------------------------------------------------------------
+
+
 
     return true;
 }
@@ -1244,6 +1281,9 @@ bool PiCameraCCD::StartStreaming()
 bool PiCameraCCD::StopStreaming()
 {
     pthread_mutex_lock(&condMutex);
+
+    terminateFrameStream();
+
     streamPredicate = 0;
     pthread_mutex_unlock(&condMutex);
     pthread_cond_signal(&cv);
@@ -1258,8 +1298,8 @@ void *PiCameraCCD::streamVideoHelper(void *context)
 
 void *PiCameraCCD::streamVideo()
 {
-    struct itimerval tframe1, tframe2;
-    double s1, s2, deltas;
+    auto start = std::chrono::high_resolution_clock::now();
+    auto finish = std::chrono::high_resolution_clock::now();
 
     while (true)
     {
@@ -1268,39 +1308,47 @@ void *PiCameraCCD::streamVideo()
         while (streamPredicate == 0)
         {
             pthread_cond_wait(&cv, &condMutex);
-            ExposureRequest = 1.0 / Streamer->getTargetFPS();
+            ExposureRequest = Streamer->getTargetExposure();
         }
 
         if (terminateThread)
             break;
 
+
         // release condMutex
         pthread_mutex_unlock(&condMutex);
 
-        // Simulate exposure time
-        //usleep(ExposureRequest*1e5);
-
-        // 16 bit
-//        DrawCcdFrame(&PrimaryCCD);
 
 
-        getitimer(ITIMER_REAL, &tframe1);
+        LOG_INFO("Looping Image Frame.");
 
-        s1 = ((double)tframe1.it_value.tv_sec) + ((double)tframe1.it_value.tv_usec / 1e6);
-        s2 = ((double)tframe2.it_value.tv_sec) + ((double)tframe2.it_value.tv_usec / 1e6);
-        deltas = fabs(s2 - s1);
+        if(getFrame(image)){;
 
-        if (deltas < ExposureRequest)
-            usleep(fabs(ExposureRequest-deltas)*1e6);
+            LOG_INFO("Reading Image Frame.");
 
-        uint32_t size = PrimaryCCD.getFrameBufferSize() /* / (PrimaryCCD.getBinX()*PrimaryCCD.getBinY())*/;
+            addtosum(image, buffer);
+
+            subFrame(buffer, (unsigned short *)PrimaryCCD.getFrameBuffer());
+
+        }
+
+
+        PrimaryCCD.binFrame();
+
+        finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = finish - start;
+
+        if (elapsed.count() < ExposureRequest)
+            usleep(fabs(ExposureRequest - elapsed.count()) * 1e6);
+
+        uint32_t size = PrimaryCCD.getFrameBufferSize() / (PrimaryCCD.getBinX() * PrimaryCCD.getBinY());
         Streamer->newFrame(PrimaryCCD.getFrameBuffer(), size);
 
-        getitimer(ITIMER_REAL, &tframe2);
+        start = std::chrono::high_resolution_clock::now();
     }
 
     pthread_mutex_unlock(&condMutex);
-    return 0;
+    return nullptr;
 }
 
 

@@ -112,7 +112,7 @@ class PiCameraCCD : public INDI::CCD
     int subFrame(unsigned short *image, unsigned short *subframe);
     int addtosum(unsigned short *image, unsigned short *buffer);
 
-    int startFrameStream();
+    int startFrameStream(double fps, double exposure);
     int terminateFrameStream();
 
     int streamPredicate;
