@@ -32,7 +32,7 @@ Add INDI config tab -
 
 raspiraw - Download and install pre-compiled binaries from https://github.com/jdhill-repo/raspiraw-bin or build from source https://github.com/6by9/raspiraw.
 
-<strike>wiringPi - http://wiringpi.com/download-and-install/ - It is highly recommended that you update wiringpi, even if it is already installed.<strike>
+<strike>wiringPi - http://wiringpi.com/download-and-install/ - It is highly recommended that you update wiringpi, even if it is already installed.</strike>
 
 indi development build - https://github.com/indilib/indi - if compiling driver from source. 
 
