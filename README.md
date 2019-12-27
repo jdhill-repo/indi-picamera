@@ -32,7 +32,7 @@ Add INDI config tab -
 
 raspiraw - Download and install pre-compiled binaries from https://github.com/jdhill-repo/raspiraw-bin or build from source https://github.com/6by9/raspiraw.
 
-wiringPi - http://wiringpi.com/download-and-install/ - It is highly recommended that you update wiringpi, even if it is already installed.
+<strike>wiringPi - http://wiringpi.com/download-and-install/ - It is highly recommended that you update wiringpi, even if it is already installed.<strike>
 
 indi development build - https://github.com/indilib/indi - if compiling driver from source. 
 
@@ -40,24 +40,32 @@ indi development build - https://github.com/indilib/indi - if compiling driver f
 
 -------------------------------------------------------
 
+# Install Pre-requisites
+
+On Debian/Ubuntu:
+
+	sudo apt-get install libnova-dev libcfitsio-dev libusb-1.0-0-dev zlib1g-dev libgsl-dev build-essential cmake git libjpeg-dev libcurl4-gnutls-dev libtiff-dev libfftw3-dev libftdi-dev libgps-dev libraw-dev libdc1394-22-dev libgphoto2-dev libboost-dev libboost-regex-dev librtlsdr-dev liblimesuite-dev libftdi1-dev
+
+-------------------------------------------------------
+
 # Build and install the indi-picamera driver
 
-	cd ~/indi/3rdparty
+	mkdir -p ~/Projects
+
+	cd ~/Projects
 
 	git clone https://github.com/jdhill-repo/indi-picamera.git
 
-	cd indi-picamera
+	mkdir -p ~/Projects/build/indi-picamera
 
-	mkdir build
+	cd ~/Projects/build/indi-picamera
+	
+	cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Debug ~/Projects/indi-3rdparty/indi-picamera
 
-	cd build
-
-	cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-
-	make
+	make -j4
 
 	sudo make install
-
+	
 -------------------------------------------------------
 
 # Running indi-picamera:
@@ -99,4 +107,4 @@ sudo nano camera_i2c
 Alternatively, the camera_i2c script would have to be executed before the beginning of the INDI session at least once when used with the Raspberry Pi 3. It will not work properly unless it is executed from the raspiraw directory.
 
 
-
+3 - wiringPi is currently no longer available through the link provided. It is used in the experimental st-4 branch.
