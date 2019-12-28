@@ -50,9 +50,9 @@ On Debian/Ubuntu:
 
 # Build and install the indi-picamera driver
 
-	mkdir -p ~/Projects
+	mkdir -p ~/Projects/indi-3rdparty
 
-	cd ~/Projects
+	cd ~/Projects/indi-3rdparty
 
 	git clone https://github.com/jdhill-repo/indi-picamera.git
 
