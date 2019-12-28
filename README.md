@@ -34,9 +34,11 @@ raspiraw - Download and install pre-compiled binaries from https://github.com/jd
 
 <strike>wiringPi - http://wiringpi.com/download-and-install/ - It is highly recommended that you update wiringpi, even if it is already installed.</strike>
 
-indi development build - https://github.com/indilib/indi - if compiling driver from source. 
+indi development build - https://github.com/indilib/indi - if compiling driver from source.
 
-	Note: The driver is available as pre-compiled binaries at https://github.com/jdhill-repo/indi-picamera-bin. The indi development build would not be needed if these are used instead of compiling from source.
+indi 3rdparty drivers - https://github.com/indilib/indi-3rdparty - It is not necessary to build all of the drivers, but the files must be on your system.
+
+	Note: The driver is available as pre-compiled binaries at https://github.com/jdhill-repo/indi-picamera-bin. The indi development and 3rdparty builds would not be needed if these are used instead of compiling from source.
 
 -------------------------------------------------------
 
@@ -49,8 +51,6 @@ On Debian/Ubuntu:
 -------------------------------------------------------
 
 # Build and install the indi-picamera driver
-
-	mkdir -p ~/Projects/indi-3rdparty
 
 	cd ~/Projects/indi-3rdparty
 
