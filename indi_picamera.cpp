@@ -475,6 +475,8 @@ int PiCameraCCD::SetTemperature(double temperature)
 
 bool PiCameraCCD::StartExposure(float duration)
 {
+
+
         minDuration = 1;
 
 /*
@@ -527,10 +529,23 @@ bool PiCameraCCD::StartExposure(float duration)
 
         //Start Frames
         if(!FrameStreamIsRunning){
-            startFrameStream(1, 1); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+
+            if(duration >= 1){
+
+                startFrameStream(1, 1); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+
+            }else{
+
+
+                double fps = 1 / duration;
+
+                startFrameStream(fps, (double) duration); //
+
+            }
+
 
             // Debug
-            LOGF_INFO("Starting frame stream of %d FPS with %d second exposures", 1,1);
+//            LOGF_INFO("Starting frame stream of %d FPS with %d second exposures", 1,1);
 
 
         }
@@ -540,7 +555,18 @@ bool PiCameraCCD::StartExposure(float duration)
         // ---------------------------------------------------------------------------
 
         // Set number of frames to collect
-        numOfFrames = duration;
+        
+	if(duration >= 1){
+
+		numOfFrames = duration;
+
+	}else{
+
+		numOfFrames = 1;
+
+	}
+
+
 
         PrimaryCCD.setExposureDuration(duration);
         ExposureRequest = duration;
@@ -604,14 +630,15 @@ int PiCameraCCD::startFrameStream(double fps, double exposure){  // Add argument
         // Create command
         ostringstream cmd;
 
+        LOGF_INFO("Starting frame stream of %d FPS with %d second exposures", fps, exposure);
+
         exposure = exposure * 950000;
 
-
-        cmd << "raspiraw -md 2 -o /dev/stdout -t 9999999 -sr 1 -eus " << exposure << " -g 230 -f " << fps;
+        cmd << "raspiraw -md 2 -o /dev/stdout -t 9999999 -sr 1 -eus " << exposure << " -g 230 --fps " << fps;
 
         LOGF_INFO("cmd : %s\n", cmd.str().c_str());
 
-        imageFileStreamPipe = popen(cmd.str().c_str(), "r");
+       imageFileStreamPipe = popen(cmd.str().c_str(), "r");
 
     }
 
@@ -1258,18 +1285,20 @@ bool PiCameraCCD::StartStreaming()
 
 
     // Debug
-    LOGF_INFO("Target FPS: %d ", Streamer->getTargetFPS());
-    LOGF_INFO("Target Exposure: %d ", Streamer->getTargetExposure());
+    LOGF_INFO("Target FPS: %d ", (double) Streamer->getTargetFPS());
+    LOGF_INFO("Target Exposure: %d ", (double) ExposureRequest);
 
 
     // ---------------------------------------------------------------------------
 
    //Start Frames
    if(!FrameStreamIsRunning){
-       startFrameStream(Streamer->getTargetFPS(), Streamer->getTargetExposure()); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
-   }
 
-   FrameStreamIsRunning = true;
+       startFrameStream(Streamer->getTargetFPS(), ExposureRequest); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+
+       FrameStreamIsRunning = true;
+
+   }
 
    // ---------------------------------------------------------------------------
 
