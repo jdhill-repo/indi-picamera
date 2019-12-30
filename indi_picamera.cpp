@@ -89,8 +89,10 @@ const char* cmd = "cat /home/jdhill/Development/rawtest/image_s25000_a16_d2.jpg"
 int fullframe = 1;
 int binned = 0;
 
+int video = 0;
+
 //Testing
-int testing = 0;
+int testing = 1;
 
 //Options
 int bayer = 1;
@@ -275,6 +277,8 @@ bool PiCameraCCD::initProperties()
     addConfigurationControl();
     addDebugControl();
     return true;
+
+    video = 0;
 }
 
 void PiCameraCCD::ISGetProperties(const char *dev)
@@ -970,7 +974,7 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
 int PiCameraCCD::addtosum(unsigned short *image, unsigned short *buffer){
 
-    if(!streamPredicate){
+    if(!video){
 
         // Summming operation
         for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
@@ -1122,7 +1126,7 @@ void PiCameraCCD::TimerHit()
 
     }else{
 
-        if(FrameStreamIsRunning & !streamPredicate){ // '
+        if(FrameStreamIsRunning & !video){ // '
 
         // ******************************************************************************************
         // Read and dispose of unused frame
@@ -1285,8 +1289,8 @@ bool PiCameraCCD::StartStreaming()
 
 
     // Debug
-    LOGF_INFO("Target FPS: %d ", (double) Streamer->getTargetFPS());
-    LOGF_INFO("Target Exposure: %d ", (double) ExposureRequest);
+    LOGF_INFO("Target FPS: %i ", Streamer->getTargetFPS());
+    LOGF_INFO("Target Exposure: %i ", ExposureRequest);
 
 
     // ---------------------------------------------------------------------------
@@ -1294,11 +1298,13 @@ bool PiCameraCCD::StartStreaming()
    //Start Frames
    if(!FrameStreamIsRunning){
 
-       startFrameStream(Streamer->getTargetFPS(), ExposureRequest); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
+       startFrameStream((double)Streamer->getTargetFPS(), (double)ExposureRequest); // Add error checking . Don't set "FrameStreamIsRunning = true" unless succesful.
 
        FrameStreamIsRunning = true;
 
    }
+
+   video = 1;
 
    // ---------------------------------------------------------------------------
 
@@ -1316,6 +1322,8 @@ bool PiCameraCCD::StopStreaming()
     streamPredicate = 0;
     pthread_mutex_unlock(&condMutex);
     pthread_cond_signal(&cv);
+
+    video = 0;
 
     return true;
 }
