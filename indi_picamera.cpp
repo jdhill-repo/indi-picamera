@@ -72,10 +72,15 @@ static pthread_mutex_t condMutex = PTHREAD_MUTEX_INITIALIZER;
 //#define HPIXELS 2592   // number of horizontal pixels on OV5647 sensor
 //#define VPIXELS 1944   // number of vertical pixels on OV5647 sensor
 
-#define RAWBLOCKSIZE 10171392   //10270208   // IMX219 sensor
-#define ROWSIZE 4128    // (IMX219 sensor)
-#define HPIXELS 3280   // number of horizontal pixels on IMX219 sensor
-#define VPIXELS 2464  // number of vertical pixels on IMX219 sensor
+//#define RAWBLOCKSIZE 10171392   //10270208   // IMX219 sensor
+//#define ROWSIZE 4128    // (IMX219 sensor)
+//#define HPIXELS 3280   // number of horizontal pixels on IMX219 sensor
+//#define VPIXELS 2464  // number of vertical pixels on IMX219 sensor
+
+#define RAWBLOCKSIZE 18580480   // IMX477 sensor
+#define ROWSIZE 6112    // (IMX477 sensor)
+#define HPIXELS 4056   // number of horizontal pixels on IMX219 sensor
+#define VPIXELS 3040  // number of vertical pixels on IMX219 sensor
 
 int file_length;
 
@@ -90,7 +95,7 @@ int fullframe = 1;
 int binned = 0;
 
 //Testing
-int testing = 0;
+int testing = 1;
 
 //Options
 int bayer = 1;
@@ -396,8 +401,8 @@ bool PiCameraCCD::setupParams()
     // 1. Get Pixel size
     ///////////////////////////
     // Actucal CALL to CCD to get pixel size here
-    x_pixel_size = 1.12;  // was 5.4;
-    y_pixel_size = 1.12; // was 5.4;
+    x_pixel_size = 1.55;  // was 5.4;
+    y_pixel_size = 1.55; // was 5.4;
 
     ///////////////////////////
     // 2. Get Frame
@@ -609,7 +614,7 @@ int PiCameraCCD::startFrameStream(){  // Add arguments for exposure and framerat
 
     if(testing){
 
-        const char* command = "'/home/jdhill/Link to Pictures/Astro/rawtest/test1/./streamraw'";
+        const char* command = "'/home/jdhill/Link to Pictures/Astro/rawtest/HQ/No Header/./streamraw'";
 
         imageFileStreamPipe = popen(command, "r"); // used for testing with cat file
 
@@ -867,6 +872,16 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
                 ///LOGF_INFO("... Frame received. -> %li bytes. ", file_length);
 
+
+
+
+
+
+                // =======================================================================================================
+
+
+
+
                 unsigned long offset;  // offset into file to start reading pixel data
                 unsigned char split;        // single byte with 4 pairs of low-order bits
 
@@ -877,6 +892,9 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
                 p = offset; // set to beginning of raw data block
 
+                // =======================================================================================================
+                // IMX219
+/*
                 for (int row=0; row < VPIXELS; row++) {  // iterate over pixel rows
 
                     for (int col = 0; col < HPIXELS; col+= 4) {  // iterate over pixel columns
@@ -898,6 +916,64 @@ int PiCameraCCD::getFrame(unsigned short *image){
                 p+= 28; // Extra bytes at end of each row
 
                 } // end
+*/
+                // =======================================================================================================
+                // IMX477
+
+                for (int row=0; row < VPIXELS; row++) {  // iterate over pixel rows
+
+                    for (int col = 0; col < HPIXELS; col+= 2) {  // iterate over pixel columns
+
+                        iPos = (row * HPIXELS) + col;
+
+                        image[iPos+0] = pData[p++] << 8;
+                        image[iPos+1] = pData[p++] << 8;
+                        split = pData[p++];    // low-order packed bits from previous 2 pixels
+                        image[iPos+0] += (split & 0b00001111)<<4;  // unpack them bits, add to 16-bit values, left-justified
+                        image[iPos+1] += (split & 0b11110000);
+
+                    }
+
+                p+= 28; // Extra bytes at end of each row
+
+                } // end
+
+
+
+                // =======================================================================================================
+/*
+                // FIXME: remove all hardcoding for IMAX477 camera. Should at least try to parse the BCRM header.
+//                const int raw_file_size = 18711040;
+//                const int brcm_header_size = 32768;
+//                int bytes_to_fill = PrimaryCCD.getFrameBufferSize();
+
+                const int raw_row_size = 6112;
+                const int trailer = 28;
+//                uint8_t row[raw_row_size];
+
+                for (int _row=0; _row < VPIXELS; _row++) {  // iterate over pixel rows
+
+
+//                    int i = 0;
+
+                        for(int p = 0; p < raw_row_size - trailer; p += 3)
+                        {
+                            uint16_t v1 = static_cast<uint16_t>(row[p] + ((row[p+2]&0xF)<<8));
+                            uint16_t v2 = static_cast<uint16_t>(row[p+1] + ((row[p+2]&0xF0)<<4));
+                            image[i++] = (v1 >> 8) & 0xFF;
+                            image[i++] = v1 & 0xFF;
+                            image[i++] = (v2 >> 8) & 0xFF;
+                            image[i++] = v2 & 0xFF;
+                        }
+
+
+                  }
+
+*/
+                // =======================================================================================================
+
+
+
 
                 ///LOG_INFO("Raw Data Unpacked");
 
@@ -915,7 +991,7 @@ int PiCameraCCD::getFrame(unsigned short *image){
 
                 // Summming operation
                 for (int pixel=0; pixel < HPIXELS * VPIXELS; pixel++) {  // iterate over pixels
-                        buffer[pixel] += image[pixel] >> 6; // remove shift created during image unpacking
+                        buffer[pixel] += image[pixel] /*>> 6*/; // remove shift created during image unpacking
                 }
                 // *********************************************************
 /*
