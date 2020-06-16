@@ -95,7 +95,7 @@ int fullframe = 1;
 int binned = 0;
 
 //Testing
-int testing = 1;
+int testing = 0;
 
 //Options
 int bayer = 1;
