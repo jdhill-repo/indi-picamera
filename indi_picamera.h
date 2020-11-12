@@ -26,6 +26,7 @@
 
 #include <indiccd.h>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -114,6 +115,8 @@ class PiCameraCCD : public INDI::CCD
 
     int startFrameStream();
     int terminateFrameStream();
+
+	string exec(string);
 
     int streamPredicate;
     pthread_t primary_thread;

@@ -323,8 +323,44 @@ bool PiCameraCCD::Connect()
    *
    **********************************************************/
 
+
+
+    if(!testing){
+//        system("camera_i2c");
+
+		string ret = exec("camera_i2c");
+		cout << ret << endl;
+
+	if (exec("i2cdetect -y 0 54 54 | grep \" 36\"") != ""){
+
+			    LOG_INFO("v1 Camera found");
+
+	}else if (exec("i2cdetect -y 0 16 16 | grep \" 10\"") != ""){
+
+			    LOG_INFO("v2 Camera found");
+
+	}else if (exec("i2cdetect -y 0 26 26 | grep \" 1a\"") != ""){
+
+			    LOG_INFO("HQ Camera found");
+
+	}else{
+
+			    LOG_INFO("No cameras located");
+
+	}
+
+
+//	"i2cdetect -y 0 54 54 | grep " 36""	//	v1
+//	"i2cdetect -y 0 16 16 | grep " 10""	//	v2
+//	"i2cdetect -y 0 26 26 | grep " 1a""	//	hq
+
+
+    }
+
     /* Success! */
     LOG_INFO("Camera is online. Retrieving basic data.");
+
+
 
 /*
 
@@ -335,9 +371,6 @@ bool PiCameraCCD::Connect()
 */
 
 
-    if(!testing){
-        system("camera_i2c");
-    }
 
 
     return true;
@@ -601,7 +634,7 @@ int PiCameraCCD::startFrameStream(){  // Add arguments for exposure and framerat
         // Create command
         ostringstream cmd;
 
-        cmd << "raspiraw -md 2 -o /dev/stdout -t 9999999 -sr 1 -eus 950000 -g 230 -f 1";
+        cmd << "raspiraw -md 0 -o /dev/stdout -t 9999999 -sr 1 -eus 950000 -g 230 -f 1";
 
         ///LOGF_INFO("cmd : %s\n", cmd.str().c_str());
 
@@ -1380,4 +1413,25 @@ void *PiCameraCCD::streamVideo()
 }
 
 
+string PiCameraCCD::exec(string command) {
+   char buffer[128];
+   string result = "";
+
+   // Open pipe to file
+   FILE* pipe = popen(command.c_str(), "r");
+   if (!pipe) {
+      return "popen failed!";
+   }
+
+   // read till end of process:
+   while (!feof(pipe)) {
+
+      // use buffer to read and add to result
+      if (fgets(buffer, 128, pipe) != NULL)
+         result += buffer;
+   }
+
+   pclose(pipe);
+   return result;
+}
 
